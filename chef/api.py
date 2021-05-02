@@ -8,6 +8,10 @@ import hashlib
 import os
 import json as libjson
 import base64
+import types
+
+with open(os.path.join(os.path.dirname(__file__), "init.json")) as f:
+    init = libjson.load(f)
 
 class OperationFailed(Exception):
     def __init__(self, operation, path, code, text):
@@ -45,17 +49,14 @@ class UpdateInvalid(Exception):
     def __init__(self, path, items):
         self.message = f"Updating {path} no valid parameter provided from {', '.join(items)}"
         
-init = libjson.load(open(os.path.join(os.path.dirname(__file__), "init.json")))
-
 class API(requests.Session):
-    def __init__(self, server, org, user, key, port=443, password=None, verify=True, cache=True):
+    def __init__(self, server, user, key, port=443, password=None, verify=True, cache=True):
         super().__init__()
         self._key = serialization.load_pem_private_key(key.encode('utf-8'), password=password)
         self._user = user
         self._verify = verify
         self._server = server
         self._port = port
-        self._org = org
         self._cache = cache
         self._headers = {
             'Accept': 'application/json',
@@ -97,87 +98,18 @@ class API(requests.Session):
     def port(self):
         return self._port
 
-    @property
-    def organization(self):
-        return self._organization
-
-    @organization.setter
-    def organization(self, org):
-        self._organization = org
-
-        
-    def get_license(self, **kwargs):
-        return self.get_path('/license', **kwargs)
-
-    @property
-    def license(self):
-        return self.get_license(cache=False, cached=False)
-
-    def get_stats(self, **kwargs):
-        return self.get_path('/_stats', **kwargs)
-
-    @property
-    def stats(self):
-        return self.get_stats(cache=False, cached=False)
-
-    def get_status(self, **kwargs):
-        return self.get_path('/_status', **kwargs)
-
-    @property
-    def status(self):
-        return self.get_status(cache=False, cached=False)
+    def get_search_indexes(self, org, **kwargs):
+        return list(self.get_path(f'/organizations/{org}/search', **kwargs).keys())
     
-    def get_organizations(self, **kwargs):
-        return self.get_path('/organizations', **kwargs)
-
-    @property
-    def organizations(self):
-        return self.get_organizations(cached=True)
-
-    def get_organization(self, name, **kwargs):
-        return self.get_path(f'/organizations/{name}', cached=True)
-    
-    def create_organization(self, name, full_name, **kwargs):
-        return self.create_path('/organizations', dict(name=name, full_name=full_name), **kwargs)
-
-    def update_organization(self, **kwargs):
-        return self.update_path(f'/organizations/{name}', ['name', 'display_name'], **kwargs)
-    
-    def delete_organization(self, name, **kwargs):
-        return self.delete_path(f'/organizations/{name}')
-    
-    def get_search_indexes(self, **kwargs):
-        return list(self.get_path('search', **kwargs).keys())
-    
-    @property
-    def search_indexes(self):
-        return self.get_search_indexes(cached=True)
 
     # see https://docs.chef.io/workstation/knife_search/#query-syntax
-    def search(self, index, start=0, rows=None, query='*', **kwargs):
+    def search(self, org, index, start=0, rows=None, query='*', **kwargs):
         if index not in self.search_indexes:
             raise GetInvalid('invalid search index')
         params = dict(start=start, q=query)
         if rows is not None:
             params['rows'] = rows
-        return self.get_path(f'search/{index}', params=params, **kwargs)['rows']
-
-    def get_cookbooks(self, **kwargs):
-        return self.get_path('universe', **kwargs)
-
-    @property
-    def cookbooks(self):
-        return self.get_cookbooks(cached=True)
-
-    def get_users(self, **kwargs):
-        return self.get_path('users', **kwargs)
-
-    @property
-    def users(self):
-        return self.get_users(cached=True)
-
-    def get_user(self, user, **kwargs):
-        return self.get_path(f'/users/{user}', **kwargs)
+        return self.get_path(f'/organizations/{org}/search/{index}', params=params, **kwargs)['rows']
 
     def create_user(self, username, first_name, last_name, email, password, middle_name=None, display_name=None, public_key=None, **kwargs):
         if not display_name:
@@ -188,77 +120,6 @@ class API(requests.Session):
         if public_key:
             params['public_key'] = public_key
         return self.create_path('/users', params, **kwargs)
-
-    def update_user(self, user, **kwargs):
-        return self.update_path(f'/users/{user}', ['username', 'display_name', 'email', 'first_name', 'last_name', 'middle_name'], **kwargs)
-        
-    def delete_user(self, user, **kwargs):
-        return self.delete_path(f'/users/{user}')
-
-    def get_user_keys(self, user, **kwargs):
-        return self.get_path(f'/users/{user}/keys', **kwargs)
-
-    def add_user_key(self, user, name, public_key, expiration_date='infinity', **kwargs):
-        return self.create_path(f'/users/{user}/keys', params=dict(name=name, public_key=public_key, expiration_date=expiration_date), **kwargs)
-
-    def delete_user_key(self, user, name, **kwargs):
-        return self.delete_path(f'/users/{user}/keys/{name}', **kwargs)
-
-    def get_user_key(self, user, name, **kwargs):
-        return self.get_path(f'/users/{user}/keys/{name}', **kwargs)
-
-    def update_user_key(self, user, name, **kwargs):
-        return self.update_path(f'/users/{user}/keys/{name}', ['name', 'public_key', 'expiration_date'], **kwargs)
-
-
-    def get_association_requests(self, **kwargs):
-        return self.get_path('assoociation_requests', **kwargs)
-
-    @property
-    def association_requests(self, **kwargs):
-        return self.get_association_requests(cached=True)
-    
-    def delete_association_request(self, id, **kwargs):
-        return self.delete_path(f'association_requests/{id}', **kwargs)
-
-    def create_association_request(self, user, **kwargs):
-        return self.create_path('association_requests', dict(user=user), **kwargs)
-
-    def get_clients(self, **kwargs):
-        return self.get_path('clients', **kwargs)
-
-    @property
-    def clients(self):
-        return self.get_clients(cached=True)
-
-    def create_client(self, client, name, clientname=None, validator=True, create_key=True, **kwargs):
-        return self.create_path('clients', dict(name=name, clientname=(clientname or name), create_key=create_key, validator=validator), **kwargs)
-
-    def get_client(self, client, **kwargs):
-        return self.get_path(f'clients/{client}', **kwargs)
-
-    def delete_client(self, client, **kwargs):
-        return self.delete_path(f'clients/{client}', **kwargs)
-
-    def update_client(self, client, **kwargs):
-        return self.update_path(f'clients/{client}', ['name', 'validator'], **kwargs)
-
-    def get_client_keys(self, client, **kwargs):
-        return self.get_path(f'clients/{client}/keys', **kwargs)
-
-    def add_client_key(self, client, name, public_key, expiration_date='infinity', **kwargs):
-        return self.create_path(f'clients/{client}/keys', params=dict(name=name, public_key=public_key, expiration_date=expiration_date), **kwargs)
-
-    def delete_client_key(self, client, name, **kwargs):
-        return self.delete_path(f'clients/{client}/keys/{name}', **kwargs)
-
-    def get_client_key(self, client, name, **kwargs):
-        return self.get_path(f'clients/{client}/keys/{name}', **kwargs)
-
-    def update_client_key(self, client, name, **kwargs):
-        return self.update_path(f'clients/{client}/keys/{name}', ['name', 'public_key', 'expiration_date'], **kwargs)
-    
-
     
     def get_path(self, path, cached=True, cache=None, **kwargs):
         if cache is None:
@@ -308,8 +169,7 @@ class API(requests.Session):
     
     # note that url is used for path within the org in this implementation
     def request(self, method, url, data=None, json=None, headers=None, verify=None, **vargs):
-        url = urljoin(f"https://{self._server}:{self._port}", url if url.startswith('/') else f"/organizations/{self._org}/{url}")
-        print(url)
+        url = urljoin(f"https://{self._server}:{self._port}", url)
         urlobj = urlparse(url)
         now = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')
         body = (data or '') + (libjson.dumps(json) if json else '')
@@ -335,4 +195,108 @@ class API(requests.Session):
         if verify is None:
             verify = self._verify
         return super().request(method, url, data=data, headers=authheaders, json=json, verify=verify, **vargs)
+
+
+
+with open(os.path.splitext(__file__)[0]+'.json') as f:
+    api = libjson.load(f)
+
+def build_list_method(path, name, config):
+    need_args = [(v or dict()).get('alias', k).rstrip('s') for k,v in config.items()][:-1]
+    make_path = "'"+path+"'" + (('%('+','.join(need_args)+',)') if need_args else '')
+    code = f'''
+def API_method_list_{name}(self{", " if need_args else ""}{", ".join(need_args)}, **vargs):
+    path = {make_path}
+    return self.get_path(path, **kwargs)
+setattr(API, 'list_{name}', API_method_list_{name})
+    '''
+    exec(code)
+    
+def build_single_get_method(path, name, config):
+    need_args =  [(v or dict()).get('alias', k).rstrip('s') for k,v in config.items()][:-1]
+    make_path = "'"+path+"'" + (('%('+','.join(need_args)+',)') if need_args else '')
+    code = f'''
+def API_method_get_{name}(self{", " if need_args else ""}{", ".join(need_args)}, **vargs):
+    path = {make_path}
+    return self.get_path(path, **kwargs)
+setattr(API, 'get_{name}', API_method_get_{name})
+    '''
+    exec(code)
+    
+
+def build_each_get_method(path, name, config):
+    name = name.rstrip('s')
+    need_args =  [(v or dict()).get('alias', k).rstrip('s') for k,v in config.items()]
+    make_path = "'"+path+"/%s'" + (('%('+','.join(need_args)+',)') if need_args else '')
+    code = f'''
+def API_method_get_{name}(self{", " if need_args else ""}{", ".join(need_args)}, **vargs):
+    path = {make_path}
+    return self.get_path(path, **kwargs)
+setattr(API, 'get_{name}', API_method_get_{name})
+    '''
+    exec(code)
+    
+def build_create_method(path, name, root, config):
+    name = name.rstrip('s')
+    need_args =  [(v or dict()).get('alias', k).rstrip('s') for k,v in root.items()][:-1]
+    make_path = "'"+path+"'" + (('%('+','.join(need_args)+',)') if need_args else '')
+    require_args = [k for k,v in (config or dict()).items() if v=="require"]
+    make_paras = ['paras = dict()']
+    for arg in require_args:
+        need_args.append(arg)
+        make_paras.append(f'paras["{arg}"] = {arg}')
+    opt_args = [(k,"'"+v+"'" if isinstance(v, str) else str(v)) for k,v in (config or dict()).items() if v!="require"]
+    for k,v in opt_args:
+        need_args.append(f'{k}={None if v[1]=="!" else v}')
+        make_paras.append(f'paras["{k}"] = ' + (f"({k} or {v[2:-1]})" if v[1]=='!' else f"{k}"))
+    make_paras = '\n'.join(['    '+p for p in make_paras])
+    code = f'''
+def API_method_create_{name}(self{", " if need_args else ""}{", ".join(need_args)}, **vargs):
+    path = {make_path}
+{make_paras}
+    return self.create_path(path, paras, **kwargs)
+setattr(API, 'create_{name}', API_method_create_{name})
+    '''
+    exec(code)    
+
+def build_update_method(path, name, config):
+    pass #print('build update method', path+'/%s', 'update_'+name.rstrip('s'))
+
+def build_exists_method(path, name, config):
+    pass #print('build exists method', path+'/%s', 'exists_'+name.rstrip('s'))
+
+def build_delete_method(path, name, config):
+    pass #print('build delete method', path+'/%s', 'delete_'+name.rstrip('s'))
+    
+def build_api_method(root, path, config):
+    full_path = '/'+'/%s/'.join([k for k in root.keys()]+[path])
+    stem = '_'.join([(v or dict()).get('alias', k).rstrip('s') for k,v in root.items()]+[(config or dict()).get('alias', path)])
+    eroot = root.copy()
+    eroot[path] = config
+    for key, value in config.items():
+        if key == 'get':
+            build_single_get_method(full_path, stem, eroot)
+        elif key == 'list':
+            build_list_method(full_path, stem, eroot)
+        elif key == 'create':
+            build_create_method(full_path, stem, eroot, value)
+        elif key == 'each':
+            for ekey, evalue in value.items():
+                if ekey == 'get':
+                    build_each_get_method(full_path, stem, eroot)
+                elif ekey == 'update':
+                    build_update_method(full_path, stem, eroot)
+                elif ekey == 'exists':
+                    build_exists_method(full_path, stem, eroot)
+                elif ekey == 'delete':
+                    build_delete_method(full_path, stem, eroot)
+        elif key == 'contains':
+            for ekey, evalue in value.items():
+                build_api_method(eroot, ekey, evalue)
+    
+for path, config in api.items():
+    build_api_method({}, path, config)
+
+
+# support HEAD method for check exists
 
