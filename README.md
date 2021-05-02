@@ -19,6 +19,6 @@ docker exec -it test-chef-server /bin/bash
 > chef-server-ctl add-user-key pivotal --key-name admin
 > exit
 ```
-Copy the private key from the `user-create` to say `test.pem`.
+Copy the private key from the `add-user-key` to say `test.pem`.
 
-See `test.py` for example usage based on above docker test server.
+See [test.py](blob/master/test.py) for example usage based on above docker test server.
