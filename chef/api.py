@@ -388,15 +388,12 @@ class API(requests.Session):
         path = '/organizations/%s/nodes'%(org,)
         return self.get_path(path, **kwargs)
     
-    def create_org_node(self, org, name, chef_type='node', json_class='Chef::Node', attributes=[], overrides=[], defaults=[], run_list=[], **kwargs):
+    def create_org_node(self, org, name, chef_type='node', json_class='Chef::Node', overrides={}, run_list=[], **kwargs):
         path = '/organizations/%s/nodes'%(org,)
         paras = dict()
         paras["name"] = name
         paras["chef_type"] = chef_type
         paras["json_class"] = json_class
-        paras["attributes"] = attributes
-        paras["overrides"] = overrides
-        paras["defaults"] = defaults
         paras["run_list"] = run_list
         return self.create_path(path, paras, **kwargs)
 
@@ -414,7 +411,7 @@ class API(requests.Session):
 
     def update_org_node(self, org, node, **kwargs):
         path = '/organizations/%s/nodes/%s'%(org,node,)
-        return self.update_path(path, ['name', 'chef_type', 'json_class', 'attributes', 'run_list', 'defaults', 'overrides'], **kwargs)
+        return self.update_path(path, ['name', 'chef_type', 'json_class', 'attributes', 'run_list', 'defaults', 'overrides', 'chef_environment'], **kwargs)
 
     def get_org_policies(self, org, **kwargs):
         path = '/organizations/%s/policies'%(org,)
@@ -436,7 +433,7 @@ class API(requests.Session):
         path = '/organizations/%s/roles'%(org,)
         return self.get_path(path, **kwargs)
     
-    def create_org_role(self, org, name, default_attributes={}, env_run_lists=[], run_list=[], override_attributes={}, description='', **kwargs):
+    def create_org_role(self, org, name, default_attributes={}, env_run_lists={}, run_list=[], override_attributes={}, description='', **kwargs):
         path = '/organizations/%s/roles'%(org,)
         paras = dict()
         paras["name"] = name
@@ -485,6 +482,59 @@ class API(requests.Session):
     def delete_org_user(self, org, user, **kwargs):
         path = '/organizations/%s/users/%s'%(org,user,)
         return self.delete_path(path, **kwargs)
+
+    def list_user_keys(self, user, **kwargs):
+        path = '/users/%s/keys'%(user,)
+        return self.get_path(path, **kwargs)
+    
+    def create_user_key(self, user, name, public_key=None, expiration_date='infinity', **kwargs):
+        path = '/users/%s/keys'%(user,)
+        paras = dict()
+        paras["user"] = user
+        paras["name"] = name
+        paras["expiration_date"] = expiration_date
+        paras["create_key"] = (public_key is None)
+        if public_key is not None:
+            paras["public_key"] = public_key
+        return self.create_path(path, paras, **kwargs)
+
+    def get_user_key(self, user, key, **kwargs):
+        path = '/users/%s/keys/%s'%(user,key,)
+        return self.get_path(path, **kwargs)
+
+    def delete_user_key(self, user, key, **kwargs):
+        path = '/users/%s/keys/%s'%(user,key,)
+        return self.delete_path(path, **kwargs)
+
+    def update_user_key(self, user, key, **kwargs):
+        path = '/users/%s/keys/%s'%(user,key,)
+        return self.update_path(path, ['name', 'public_key', 'expiration_date'], **kwargs)
+
+    def list_org_client_keys(self, org, client, **kwargs):
+        path = '/organizations/%s/clients/%s/keys'%(org,client,)
+        return self.get_path(path, **kwargs)
+    
+    def create_org_client_key(self, org, client, name, public_key=None, expiration_date='infinity', **kwargs):
+        path = '/organizations/%s/clients/%s/keys'%(org,client,)
+        paras = dict()
+        paras["name"] = name
+        paras["create_key"] = (public_key is None)
+        paras["expiration_date"] = expiration_date
+        if public_key:
+            paras["public_key"] = public_key
+        return self.create_path(path, paras, **kwargs)
+
+    def get_org_client_key(self, org, client, key, **kwargs):
+        path = '/organizations/%s/clients/%s/keys/%s'%(org,client,key,)
+        return self.get_path(path, **kwargs)
+
+    def delete_org_client_key(self, org, client, key, **kwargs):
+        path = '/organizations/%s/clients/%s/keys/%s'%(org,client,key,)
+        return self.delete_path(path, **kwargs)
+
+    def update_org_client_key(self, org, client, key, **kwargs):
+        path = '/organizations/%s/clients/%s/keys/%s'%(org,client,key,)
+        return self.update_path(path, ['name', 'public_key', 'expiration_date'], **kwargs)
     
     def get_path(self, path, cached=True, cache=None, **kwargs):
         if cache is None:

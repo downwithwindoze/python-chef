@@ -24,21 +24,20 @@ users:
       - last_name
       - middle_name
     delete: null
-    contains:
-      keys:
-        list: null
-        create:
-          user: require
-          name: require
-          public_key: require
-          expiration_date: infinity
-        each:
-          get: null
-          delete: null
-          update:
-            - name
-            - public_key
-            - expiration_date
+  contains:
+    keys:
+      list: null
+      create:
+        name: require
+        public_key: require
+        expiration_date: infinity
+      each:
+        get: null
+        delete: null
+        update:
+          - name
+          - public_key
+          - expiration_date
 organizations:
   alias: orgs
   truncate: true
@@ -71,21 +70,20 @@ organizations:
           - name
           - validator
         delete: null
-        contains:
-          keys:
-            list: null
-            create:
-              user: require
-              name: require
-              public_key: require
-              expiration_date: infinity
-            each:
-              get: null
-              delete: null
-              update:
-                - name
-                - public_key
-                - expiration_date
+      contains:
+        keys:
+          list: null
+          create:
+            name: require
+            public_key: require
+            expiration_date: infinity
+          each:
+            get: null
+            delete: null
+            update:
+              - name
+              - public_key
+              - expiration_date
     cookbook_artifacts:
       parts:
         version:
@@ -111,7 +109,9 @@ organizations:
       list: null
       create:
         name: require
-      delete: null
+      each:
+        delete: null
+        get: null
       parts:
         item:
           get: null
@@ -126,10 +126,10 @@ organizations:
       list: null
       create:
         name: require
-        default_attributes: null
+        default_attributes: {}
         json_class: "Chef::Environment"
         description: ""
-        cookbook_versions: null
+        cookbook_versions: {}
         chef_type: environment
       each:
         get: null
@@ -174,9 +174,6 @@ organizations:
         name: require
         chef_type: node
         json_class: "Chef::Node"
-        attributes: []
-        overrides: []
-        defaults: []
         run_list: []
       each:
         get: null
@@ -190,6 +187,7 @@ organizations:
           - run_list
           - defaults
           - overrides
+          - chef_environment
     policies:
       get: null
     policy_groups:
@@ -202,10 +200,10 @@ organizations:
       list: null
       create:
         name: require
-        default_attributes: []
-        env_run_lists: null
+        default_attributes: {}
+        env_run_lists: {}
         run_list: []
-        override_attributes: null
+        override_attributes: {}
         description: ""
       each:
         delete: null
