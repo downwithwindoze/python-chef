@@ -16,6 +16,6 @@ setuptools.setup(
     packages = ['chef'],
     zip_safe = True,
     requires = ['requests', 'cryptography'],
-    package_data = dict(chef='init.json')
+    package_data = dict(chef=['init.json'])
 )
     
