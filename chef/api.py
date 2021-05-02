@@ -101,7 +101,6 @@ class API(requests.Session):
     def get_search_indexes(self, org, **kwargs):
         return list(self.get_path(f'/organizations/{org}/search', **kwargs).keys())
     
-
     # see https://docs.chef.io/workstation/knife_search/#query-syntax
     def search(self, org, index, start=0, rows=None, query='*', **kwargs):
         if index not in self.search_indexes:
@@ -120,6 +119,372 @@ class API(requests.Session):
         if public_key:
             params['public_key'] = public_key
         return self.create_path('/users', params, **kwargs)
+
+    def get_license(self, **kwargs):
+        path = '/license'
+        return self.get_path(path, **kwargs)
+    @property
+    def license(self):
+        return self.get_license(cache=False, cached=False)
+
+    def get_stats(self, **kwargs):
+        path = '/_stats'
+        return self.get_path(path, **kwargs)
+    @property
+    def stats(self):
+        return self.get_stats(cache=False, cached=False)
+
+    def get_status(self, **kwargs):
+        path = '/_status'
+        return self.get_path(path, **kwargs)
+    @property
+    def status(self):
+        return self.get_status(cache=False, cached=False)
+
+    def get_cookbooks(self, **kwargs):
+        path = '/universe'
+        return self.get_path(path, **kwargs)
+    @property
+    def cookbooks(self):
+        return self.get_cookbooks(cache=False, cached=False)
+
+    def list_users(self, **kwargs):
+        path = '/users'
+        return self.get_path(path, **kwargs)
+    
+    def get_user(self, user, **kwargs):
+        path = '/users/%s'%(user,)
+        return self.get_path(path, **kwargs)
+
+    def update_user(self, user, **kwargs):
+        path = '/users/%s'%(user,)
+        kwargs['username'] = kwargs.get('username', user)
+        return self.update_path(path, ['username', 'display_name', 'email', 'first_name', 'last_name', 'middle_name'], **kwargs)
+
+    def delete_user(self, user, **kwargs):
+        path = '/users/%s'%(user,)
+        return self.delete_path(path, **kwargs)
+
+    def list_orgs(self, **kwargs):
+        path = '/organizations'
+        return self.get_path(path, **kwargs)
+
+    def get_org(self, org, **kwargs):
+        path = '/organizations/%s'%(org,)
+        return self.get_path(path, **kwargs)
+    
+    def create_org(self, name, full_name, **kwargs):
+        path = '/organizations'
+        paras = dict()
+        paras["name"] = name
+        paras["full_name"] = full_name
+        return self.create_path(path, paras, **kwargs)
+
+    def update_org(self, org, **kwargs):
+        path = '/organizations/%s'%(org,)
+        kwargs['name'] = kwargs.get('name', org)
+        return self.update_path(path, ['name', 'full_name'], **kwargs)
+
+    def delete_org(self, org, **kwargs):
+        path = '/organizations/%s'%(org,)
+        return self.delete_path(path, **kwargs)
+
+    def get_org_association_requests(self, org, **kwargs):
+        path = '/organizations/%s/association_requests'%(org,)
+        return self.get_path(path, **kwargs)
+
+    def create_org_association_request(self, org, **kwargs):
+        path = '/organizations/%s/association_requests'%(org,)
+        paras = dict()
+        return self.create_path(path, paras, **kwargs)
+
+    def list_org_clients(self, org, **kwargs):
+        path = '/organizations/%s/clients'%(org,)
+        return self.get_path(path, **kwargs)
+    
+    def create_org_client(self, org, name, validator=True, create_key=True, **kwargs):
+        path = '/organizations/%s/clients'%(org,)
+        paras = dict()
+        paras["name"] = name
+        paras["clientname"] = name
+        paras["validator"] = validator
+        paras["create_key"] = create_key
+        return self.create_path(path, paras, **kwargs)
+
+    def get_org_client(self, org, client, **kwargs):
+        path = '/organizations/%s/clients/%s'%(org,client,)
+        return self.get_path(path, **kwargs)
+
+    def update_org_client(self, org, client, **kwargs):
+        path = '/organizations/%s/clients/%s'%(org,client,)
+        if 'name' in kwargs:
+            kwargs['clientname'] = kwargs['name']
+        if 'clientname' in kwargs:
+            kwargs['name'] = kwargs['clientname']
+        return self.update_path(path, ['name', 'clientname', 'validator'], **kwargs)
+
+    def delete_org_client(self, org, client, **kwargs):
+        path = '/organizations/%s/clients/%s'%(org,client,)
+        return self.delete_path(path, **kwargs)
+
+    def get_org_cookbook_artifact_version(self, org, cookbook_artifact, version, **kwargs):
+        path = '/organizations/%s/cookbook_artifacts/%s/%s'%(org,cookbook_artifact,version,)
+        return self.get_path(path, **kwargs)
+
+    def list_org_cookbook_artifacts(self, org, **kwargs):
+        path = '/organizations/%s/cookbook_artifacts'%(org,)
+        return self.get_path(path, **kwargs)
+    
+    def get_org_cookbook_artifact(self, org, cookbook_artifact, **kwargs):
+        path = '/organizations/%s/cookbook_artifacts/%s'%(org,cookbook_artifact,)
+        return self.get_path(path, **kwargs)
+
+    def get_org_cookbook_version(self, org, cookbook, version, **kwargs):
+        path = '/organizations/%s/cookbooks/%s/%s'%(org,cookbook,version,)
+        return self.get_path(path, **kwargs)
+
+    def list_org_cookbooks(self, org, **kwargs):
+        path = '/organizations/%s/cookbooks'%(org,)
+        return self.get_path(path, **kwargs)
+    
+    def get_org_cookbook(self, org, cookbook, **kwargs):
+        path = '/organizations/%s/cookbooks/%s'%(org,cookbook,)
+        return self.get_path(path, **kwargs)
+
+    def delete_org_cookbook(self, org, cookbook, **kwargs):
+        path = '/organizations/%s/cookbooks/%s'%(org,cookbook,)
+        return self.delete_path(path, **kwargs)
+
+    def get_org_cookbooks_latest(self, org, **kwargs):
+        path = '/organizations/%s/cookbooks/_latest'%(org,)
+        return self.get_path(path, **kwargs)
+
+    def get_org_cookbooks_recipes(self, org, **kwargs):
+        path = '/organizations/%s/cookbooks/_recipes'%(org,)
+        return self.get_path(path, **kwargs)
+
+    def list_org_data(self, org, **kwargs):
+        path = '/organizations/%s/data'%(org,)
+        return self.get_path(path, **kwargs)
+    
+    def create_org_data(self, org, name, **kwargs):
+        path = '/organizations/%s/data'%(org,)
+        paras = dict()
+        paras["name"] = name
+        return self.create_path(path, paras, **kwargs)
+
+    def delete_org_data(self, org, data, **kwargs):
+        path = '/organizations/%s/data/%s'%(org,data,)
+        return self.delete_path(path, **kwargs)
+
+    def get_org_data(self, org, data, **kwargs):
+        path = '/organizations/%s/data/%s'%(org,data,)
+        return self.get_path(path, **kwargs)
+        
+    def get_org_data_item(self, org, data, item, **kwargs):
+        path = '/organizations/%s/data/%s/%s'%(org,data,item,)
+        return self.get_path(path, **kwargs)
+
+    def delete_org_data_item(self, org, data, item, **kwargs):
+        path = '/organizations/%s/data/%s/%s'%(org,data,item,)
+        return self.delete_path(path, **kwargs)
+
+    def create_org_data_item(self, org, data, name, content, **kwargs):
+        path = '/organizations/%s/data/%s'%(org,data,)
+        paras = content
+        if 'id' not in paras:
+            paras['id'] = name
+        return self.create_path(path, paras, **kwargs)
+
+    def update_org_data_item(self, org, data, item, content, **kwargs):
+        path = '/organizations/%s/data/%s/%s'%(org,data,item,)
+        if 'id' not in content:
+            content['id'] = item
+        kwargs.update(content)
+        return self.update_path(path, list(content.keys()), **kwargs)
+
+    def replace_org_data_item(self, org, data, item, content, **kwargs):
+        kwargs['replace'] = True
+        return self.update_org_data_item(org, data, item, content, **kwargs)
+        
+    def list_org_environments(self, org, **kwargs):
+        path = '/organizations/%s/environments'%(org,)
+        return self.get_path(path, **kwargs)
+    
+    def create_org_environment(self, org, name, default_attributes={}, json_class='Chef::Environment', description='', cookbook_versions={}, chef_type='environment', **kwargs):
+        path = '/organizations/%s/environments'%(org,)
+        paras = dict()
+        paras["name"] = name
+        paras["default_attributes"] = default_attributes
+        paras["json_class"] = json_class
+        paras["description"] = description
+        paras["cookbook_versions"] = cookbook_versions
+        paras["chef_type"] = chef_type
+        return self.create_path(path, paras, **kwargs)
+
+    def get_org_environment(self, org, environment, **kwargs):
+        path = '/organizations/%s/environments/%s'%(org,environment,)
+        return self.get_path(path, **kwargs)
+
+    def delete_org_environment(self, org, environment, **kwargs):
+        path = '/organizations/%s/environments/%s'%(org,environment,)
+        return self.delete_path(path, **kwargs)
+
+    def update_org_environment(self, org, environment, **kwargs):
+        path = '/organizations/%s/environments/%s'%(org,environment,)
+        return self.update_path(path, ['name', 'default_attributes', 'description', 'cookbook_versions'], **kwargs)
+
+    def create_org_environment_cookbook_version(self, org, environment, run_list, **kwargs):
+        path = '/organizations/%s/environments/%s/cookbook_versions'%(org,environment,)
+        paras = dict()
+        paras["run_list"] = run_list
+        return self.create_path(path, paras, **kwargs)
+
+    def get_org_environment_cookbooks(self, org, environment, **kwargs):
+        path = '/organizations/%s/environments/%s/cookbooks'%(org,environment,)
+        return self.get_path(path, **kwargs)
+
+    def get_org_environment_nodes(self, org, environment, **kwargs):
+        path = '/organizations/%s/environments/%s/nodes'%(org,environment,)
+        return self.get_path(path, **kwargs)
+
+    def get_org_environment_recipes(self, org, environment, **kwargs):
+        path = '/organizations/%s/environments/%s/recipes'%(org,environment,)
+        return self.get_path(path, **kwargs)
+
+    def get_org_environment_role(self, org, environment, role, **kwargs):
+        path = '/organizations/%s/environments/%s/roles/%s'%(org,environment,role,)
+        return self.get_path(path, **kwargs)
+
+    def get_org_default_environment(self, org, **kwargs):
+        path = '/organizations/%s/environments/_default'%(org,)
+        return self.get_path(path, **kwargs)
+
+    def list_org_groups(self, org, **kwargs):
+        path = '/organizations/%s/groups'%(org,)
+        return self.get_path(path, **kwargs)
+    
+    def create_org_group(self, org, name, groupname=None, actors=[], **kwargs):
+        path = '/organizations/%s/groups'%(org,)
+        paras = dict()
+        paras["name"] = name
+        paras["groupname"] = (groupname or name)
+        paras["actors"] = actors
+        return self.create_path(path, paras, **kwargs)
+
+    def get_org_group(self, org, group, **kwargs):
+        path = '/organizations/%s/groups/%s'%(org,group,)
+        return self.get_path(path, **kwargs)
+
+    def delete_org_group(self, org, group, **kwargs):
+        path = '/organizations/%s/groups/%s'%(org,group,)
+        return self.delete_path(path, **kwargs)
+
+    def update_org_group(self, org, group, **kwargs):
+        path = '/organizations/%s/groups/%s'%(org,group,)
+        return self.update_path(path, ['name', 'groupname', 'actors'], **kwargs)
+
+    def list_org_nodes(self, org, **kwargs):
+        path = '/organizations/%s/nodes'%(org,)
+        return self.get_path(path, **kwargs)
+    
+    def create_org_node(self, org, name, chef_type='node', json_class='Chef::Node', attributes=[], overrides=[], defaults=[], run_list=[], **kwargs):
+        path = '/organizations/%s/nodes'%(org,)
+        paras = dict()
+        paras["name"] = name
+        paras["chef_type"] = chef_type
+        paras["json_class"] = json_class
+        paras["attributes"] = attributes
+        paras["overrides"] = overrides
+        paras["defaults"] = defaults
+        paras["run_list"] = run_list
+        return self.create_path(path, paras, **kwargs)
+
+    def get_org_node(self, org, node, **kwargs):
+        path = '/organizations/%s/nodes/%s'%(org,node,)
+        return self.get_path(path, **kwargs)
+
+    def delete_org_node(self, org, node, **kwargs):
+        path = '/organizations/%s/nodes/%s'%(org,node,)
+        return self.delete_path(path, **kwargs)
+
+    def exists_org_node(self, org, node, **kwargs):
+        path = '/organizations/%s/nodes/%s'%(org,node,)
+        return self.exists_path(path, **kwargs)
+
+    def update_org_node(self, org, node, **kwargs):
+        path = '/organizations/%s/nodes/%s'%(org,node,)
+        return self.update_path(path, ['name', 'chef_type', 'json_class', 'attributes', 'run_list', 'defaults', 'overrides'], **kwargs)
+
+    def get_org_policies(self, org, **kwargs):
+        path = '/organizations/%s/policies'%(org,)
+        return self.get_path(path, **kwargs)
+
+    def get_org_policy_groups(self, org, **kwargs):
+        path = '/organizations/%s/policy_groups'%(org,)
+        return self.get_path(path, **kwargs)
+
+    def get_org_principals(self, org, **kwargs):
+        path = '/organizations/%s/principals'%(org,)
+        return self.get_path(path, **kwargs)
+
+    def get_org_required_recipe(self, org, **kwargs):
+        path = '/organizations/%s/required_recipe'%(org,)
+        return self.get_path(path, **kwargs)
+
+    def list_org_roles(self, org, **kwargs):
+        path = '/organizations/%s/roles'%(org,)
+        return self.get_path(path, **kwargs)
+    
+    def create_org_role(self, org, name, default_attributes={}, env_run_lists=[], run_list=[], override_attributes={}, description='', **kwargs):
+        path = '/organizations/%s/roles'%(org,)
+        paras = dict()
+        paras["name"] = name
+        paras["default_attributes"] = default_attributes
+        paras["env_run_lists"] = env_run_lists
+        paras["run_list"] = run_list
+        paras["override_attributes"] = override_attributes
+        paras["description"] = description
+        return self.create_path(path, paras, **kwargs)
+
+    def delete_org_role(self, org, role, **kwargs):
+        path = '/organizations/%s/roles/%s'%(org,role,)
+        return self.delete_path(path, **kwargs)
+
+    def get_org_role(self, org, role, **kwargs):
+        path = '/organizations/%s/roles/%s'%(org,role,)
+        return self.get_path(path, **kwargs)
+
+    def update_org_role(self, org, role, **kwargs):
+        path = '/organizations/%s/roles/%s'%(org,role,)
+        return self.update_path(path, ['name', 'default_attributes', 'description', 'env_run_lists', 'run_list', 'override_attributes'], **kwargs)
+
+    def list_org_role_environments(self, org, role, **kwargs):
+        path = '/organizations/%s/roles/%s/environments'%(org,role,)
+        return self.get_path(path, **kwargs)
+    
+    def get_org_role_environment(self, org, role, environment, **kwargs):
+        path = '/organizations/%s/roles/%s/environments/%s'%(org,role,environment,)
+        return self.get_path(path, **kwargs)
+
+    def list_org_users(self, org, **kwargs):
+        path = '/organizations/%s/users'%(org,)
+        return self.get_path(path, **kwargs)
+    
+
+    def create_org_user(self, org, user, **kwargs):
+        path = '/organizations/%s/users'%(org,)
+        paras = dict()
+        paras["user"] = user
+        return self.create_path(path, paras, **kwargs)
+
+    def get_org_user(self, org, user, **kwargs):
+        path = '/organizations/%s/users/%s'%(org,user,)
+        return self.get_path(path, **kwargs)
+
+    def delete_org_user(self, org, user, **kwargs):
+        path = '/organizations/%s/users/%s'%(org,user,)
+        return self.delete_path(path, **kwargs)
     
     def get_path(self, path, cached=True, cache=None, **kwargs):
         if cache is None:
@@ -144,6 +509,10 @@ class API(requests.Session):
 
     def update_path(self, path, items, **kwargs):
         params = dict()
+        if not kwargs.get('replace', False):
+            params = self.get_path(path, cached=False)
+        if 'replace' in kwargs:
+            del kwargs['replace']
         valid = False
         for item in items:
             if item in kwargs:
@@ -153,8 +522,8 @@ class API(requests.Session):
         if not valid:
             raise UpdateInvalid(path, items)
         resp = self.put(path, json=params, **kwargs)
-        if resp.status_code != 201:
-            raise UpdateFailed(json, path, resp.status_code, resp.text)
+        if resp.status_code not in (200,201):
+            raise UpdateFailed(params, path, resp.status_code, resp.text)
         if path in self._cached:
             del self._cached[path]
         return resp.json()
@@ -200,155 +569,4 @@ class API(requests.Session):
             verify = self._verify
         return super().request(method, url, data=data, headers=authheaders, json=json, verify=verify, **kwargs)
 
-
-
-with open(os.path.splitext(__file__)[0]+'.json') as f:
-    api = libjson.load(f)
-
-def build_list_method(path, name, config):
-    need_args = [(v or dict()).get('alias', k).rstrip('s') for k,v in config.items()][:-1]
-    make_path = "'"+path+"'" + (('%('+','.join(need_args)+',)') if need_args else '')
-    code = f'''
-def API_method_list_{name}(self{", " if need_args else ""}{", ".join(need_args)}, **kwargs):
-    path = {make_path}
-    return self.get_path(path, **kwargs)
-setattr(API, 'list_{name}', API_method_list_{name})
-    '''
-    exec(code)
-    
-def build_single_get_method(path, name, config):
-    need_args =  [(v or dict()).get('alias', k).rstrip('s') for k,v in config.items()][:-1]
-    make_path = "'"+path+"'" + (('%('+','.join(need_args)+',)') if need_args else '')
-    code = f'''
-def API_method_get_{name}(self{", " if need_args else ""}{", ".join(need_args)}, **kwargs):
-    path = {make_path}
-    return self.get_path(path, **kwargs)
-setattr(API, 'get_{name}', API_method_get_{name})
-    '''
-    exec(code)
-    
-
-def build_each_get_method(path, name, config, part=None):
-    name = name.rstrip('s')
-    need_args =  [(v or dict()).get('alias', k).rstrip('s') for k,v in config.items()]
-    if part:
-        need_args.append(part)
-    make_path = "'"+path+"/%s"+("/%s" if part else "")+"'" + (('%('+','.join(need_args)+',)') if need_args else '')
-    code = f'''
-def API_method_get_{name}{("_"+part) if part else ""}(self{", " if need_args else ""}{", ".join(need_args)}, **kwargs):
-    path = {make_path}
-    return self.get_path(path, **kwargs)
-setattr(API, 'get_{name}{("_"+part) if part else ""}', API_method_get_{name}{("_"+part) if part else ""})
-    '''
-    exec(code)
-    
-def build_create_method(path, name, root, config, part=None):
-    name = name.rstrip('s')
-    need_args =  [(v or dict()).get('alias', k).rstrip('s') for k,v in root.items()]
-    if not part:
-        need_args = need_args[:-1]
-    make_path = "'"+path+("/%s" if part else "")+"'" + (('%('+','.join(need_args)+',)') if need_args else '')
-    require_args = [k for k,v in (config or dict()).items() if v=="require"]
-    make_paras = ['paras = dict()']
-    for arg in require_args:
-        need_args.append(arg)
-        make_paras.append(f'paras["{arg}"] = {arg}')
-    opt_args = [(k,"'"+v+"'" if isinstance(v, str) else str(v)) for k,v in (config or dict()).items() if v!="require"]
-    for k,v in opt_args:
-        need_args.append(f'{k}={None if v[1]=="!" else v}')
-        make_paras.append(f'paras["{k}"] = ' + (f"({k} or {v[2:-1]})" if v[1]=='!' else f"{k}"))
-    make_paras = '\n'.join(['    '+p for p in make_paras])
-    code = f'''
-def API_method_create_{name}{("_"+part) if part else ""}(self{", " if need_args else ""}{", ".join(need_args)}, **kwargs):
-    path = {make_path}
-{make_paras}
-    return self.create_path(path, paras, **kwargs)
-setattr(API, 'create_{name}{("_"+part) if part else ""}', API_method_create_{name}{("_"+part) if part else ""})
-    '''
-    exec(code)    
-
-def build_update_method(path, name, root, config, part=None):
-    name = name.rstrip('s')
-    need_args =  [(v or dict()).get('alias', k).rstrip('s') for k,v in root.items()]
-    if part:
-        need_args.append(part)
-    make_path = "'"+path+"/%s"+("/%s" if part else "")+"'" + (('%('+','.join(need_args)+',)') if need_args else '')
-    code = f'''
-def API_method_update_{name}{("_"+part) if part else ""}(self{", " if need_args else ""}{", ".join(need_args)}, **kwargs):
-    path = {make_path}
-    return self.update_path(path, [{', '.join(["'"+c+"'" for c in config])}], **kwargs)
-setattr(API, 'update_{name}{("_"+part) if part else ""}', API_method_update_{name}{("_"+part) if part else ""})
-    '''
-    exec(code)
-   
-
-def build_exists_method(path, name, config):
-    name = name.rstrip('s')
-    need_args =  [(v or dict()).get('alias', k).rstrip('s') for k,v in config.items()]
-    make_path = "'"+path+"/%s'" + (('%('+','.join(need_args)+',)') if need_args else '')
-    code = f'''
-def API_method_exists_{name}(self{", " if need_args else ""}{", ".join(need_args)}, **kwargs):
-    path = {make_path}
-    return self.exists_path(path, **kwargs)
-setattr(API, 'exists_{name}', API_method_exists_{name})
-    '''
-    exec(code)
-    
-def build_delete_method(path, name, config, part=None):
-    name = name.rstrip('s')
-    need_args =  [(v or dict()).get('alias', k).rstrip('s') for k,v in config.items()]
-    if part:
-        need_args.append(part)
-    make_path = "'"+path+"/%s"+("/%s" if part else "")+"'" + (('%('+','.join(need_args)+',)') if need_args else '')
-    code = f'''
-def API_method_delete_{name}{("_"+part) if part else ""}(self{", " if need_args else ""}{", ".join(need_args)}, **kwargs):
-    path = {make_path}
-    return self.delete_path(path, **kwargs)
-setattr(API, 'delete_{name}{("_"+part) if part else ""}', API_method_delete_{name}{("_"+part) if part else ""})
-    '''
-    exec(code)
-    
-    
-def build_api_method(root, path, config):
-    full_path = '/'+'/%s/'.join([k for k in root.keys()]+[path])
-    stem = '_'.join([(v or dict()).get('alias', k).rstrip('s') for k,v in root.items()]+[(config or dict()).get('alias', path)])
-    eroot = root.copy()
-    eroot[path] = config
-    for key, value in config.items():
-        if key == 'get':
-            build_single_get_method(full_path, stem, eroot)
-        elif key == 'list':
-            build_list_method(full_path, stem, eroot)
-        elif key == 'create':
-            build_create_method(full_path, stem, eroot, value)
-        elif key == 'each':
-            for ekey, evalue in value.items():
-                if ekey == 'get':
-                    build_each_get_method(full_path, stem, eroot)
-                elif ekey == 'update':
-                    build_update_method(full_path, stem, eroot, evalue)
-                elif ekey == 'exists':
-                    build_exists_method(full_path, stem, eroot)
-                elif ekey == 'delete':
-                    build_delete_method(full_path, stem, eroot)
-        elif key == 'parts':
-            for pkey, pvalue in value.items():
-                for ekey, evalue in pvalue.items():
-                    if ekey == 'get':
-                        build_each_get_method(full_path, stem, eroot, pkey)
-                    elif ekey == 'delete':
-                        build_delete_method(full_path, stem, eroot, pkey)
-                    elif ekey == 'update':
-                        build_update_method(full_path, stem, eroot, evalue, pkey)
-                    elif ekey == 'create':
-                        build_create_method(full_path, stem, eroot, evalue, pkey)
-        elif key == 'contains':
-            for ekey, evalue in value.items():
-                build_api_method(eroot, ekey, evalue)
-    
-for path, config in api.items():
-    build_api_method({}, path, config)
-
-
-# support HEAD method for check exists
 

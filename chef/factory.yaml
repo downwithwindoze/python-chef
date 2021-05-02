@@ -1,0 +1,231 @@
+# yq eval -j api.yaml > factory.json
+license:
+  get: null
+_stats:
+  alias: stats
+  get:
+    cache: false
+_status:
+  alias: status
+  get:
+    cache: false
+universe:
+  alias: cookbooks
+  get: null
+users:
+  list: null
+  each:
+    get: null
+    update:
+      - username
+      - display_name
+      - email
+      - first_name
+      - last_name
+      - middle_name
+    delete: null
+    contains:
+      keys:
+        list: null
+        create:
+          user: require
+          name: require
+          public_key: require
+          expiration_date: infinity
+        each:
+          get: null
+          delete: null
+          update:
+            - name
+            - public_key
+            - expiration_date
+organizations:
+  alias: orgs
+  truncate: true
+  list: null
+  create:
+    name: require
+    full_name: require
+  each:
+    get: null
+    update:
+      - name
+      - full_name
+    delete: null
+    each:
+      delete: null
+  contains:
+    association_requests:
+      get: null
+      create: null    
+    clients:
+      list: null
+      create:
+        name: require
+        clientname: "!name"
+        validator: true
+        create_key: true
+      each:
+        get: null
+        update:
+          - name
+          - validator
+        delete: null
+        contains:
+          keys:
+            list: null
+            create:
+              user: require
+              name: require
+              public_key: require
+              expiration_date: infinity
+            each:
+              get: null
+              delete: null
+              update:
+                - name
+                - public_key
+                - expiration_date
+    cookbook_artifacts:
+      parts:
+        version:
+          get: null
+      list: null
+      each:
+        get: null        
+    cookbooks:
+      parts:
+        version:
+          get: null
+      list: null
+      each:
+        get: null
+        delete: null
+    cookbooks/_latest:
+      alias: cookbooks_latest
+      get: null
+    cookbooks/_recipes:
+      alias: cookbooks_recipes
+      get: null
+    data:
+      list: null
+      create:
+        name: require
+      delete: null
+      parts:
+        item:
+          get: null
+          delete: null
+          create:
+            name: require
+            content: require
+          update:
+            name: require
+            content: require
+    environments:
+      list: null
+      create:
+        name: require
+        default_attributes: null
+        json_class: "Chef::Environment"
+        description: ""
+        cookbook_versions: null
+        chef_type: environment
+      each:
+        get: null
+        delete: null
+        update:
+          - name
+          - default_attributes
+          - description
+          - cookbook_versions
+      contains:
+        cookbook_versions:
+          create:
+            run_list: require
+        cookbooks:
+          get: null
+        nodes:
+          get: null
+        recipes:
+          get: null
+        roles:
+          each:
+            get: null    
+    environments/_default:
+      alias: default_environment
+      get: null
+    groups:
+      list: null
+      create:
+        name: require
+        groupname: "!name"
+        actors: []
+      each:
+        get: null
+        delete: null
+        update:
+          - name
+          - groupname
+          - actors
+    nodes:
+      list: null
+      create:
+        name: require
+        chef_type: node
+        json_class: "Chef::Node"
+        attributes: []
+        overrides: []
+        defaults: []
+        run_list: []
+      each:
+        get: null
+        delete: null
+        exists: null
+        update:
+          - name
+          - chef_type
+          - json_class
+          - attributes
+          - run_list
+          - defaults
+          - overrides
+    policies:
+      get: null
+    policy_groups:
+      get: null
+    principals:
+      get: null
+    required_recipes:
+      get: null
+    roles:
+      list: null
+      create:
+        name: require
+        default_attributes: []
+        env_run_lists: null
+        run_list: []
+        override_attributes: null
+        description: ""
+      each:
+        delete: null
+        get: null
+        update:
+          - name
+          - default_attributes
+          - description
+          - env_run_lists
+          - run_list
+          - override_attributes
+      contains:
+        environments:
+          list: null
+          each:
+            get: null
+    users:
+      list: null
+      create:
+        user: require
+      each:
+        get: null
+        delete: null
