@@ -21,4 +21,4 @@ docker exec -it test-chef-server /bin/bash
 ```
 Copy the private key from the `add-user-key` to say `test.pem`.
 
-See [test.py](blob/master/test.py) for example usage based on above docker test server.
+See [test.py](test.py) for example usage based on above docker test server.
