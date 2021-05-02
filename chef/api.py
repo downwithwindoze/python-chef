@@ -166,9 +166,13 @@ class API(requests.Session):
         if path in self._cached:
             del self._cached[path]
         return resp.json()
+
+    def head_path(self, path, **kwargs):
+        resp = self.head(path, **kwargs)
+        return resp.status_code == 200
     
     # note that url is used for path within the org in this implementation
-    def request(self, method, url, data=None, json=None, headers=None, verify=None, **vargs):
+    def request(self, method, url, data=None, json=None, headers=None, verify=None, **kwargs):
         url = urljoin(f"https://{self._server}:{self._port}", url)
         urlobj = urlparse(url)
         now = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')
@@ -194,7 +198,7 @@ class API(requests.Session):
         authheaders.update(headers or dict())
         if verify is None:
             verify = self._verify
-        return super().request(method, url, data=data, headers=authheaders, json=json, verify=verify, **vargs)
+        return super().request(method, url, data=data, headers=authheaders, json=json, verify=verify, **kwargs)
 
 
 
@@ -205,7 +209,7 @@ def build_list_method(path, name, config):
     need_args = [(v or dict()).get('alias', k).rstrip('s') for k,v in config.items()][:-1]
     make_path = "'"+path+"'" + (('%('+','.join(need_args)+',)') if need_args else '')
     code = f'''
-def API_method_list_{name}(self{", " if need_args else ""}{", ".join(need_args)}, **vargs):
+def API_method_list_{name}(self{", " if need_args else ""}{", ".join(need_args)}, **kwargs):
     path = {make_path}
     return self.get_path(path, **kwargs)
 setattr(API, 'list_{name}', API_method_list_{name})
@@ -216,7 +220,7 @@ def build_single_get_method(path, name, config):
     need_args =  [(v or dict()).get('alias', k).rstrip('s') for k,v in config.items()][:-1]
     make_path = "'"+path+"'" + (('%('+','.join(need_args)+',)') if need_args else '')
     code = f'''
-def API_method_get_{name}(self{", " if need_args else ""}{", ".join(need_args)}, **vargs):
+def API_method_get_{name}(self{", " if need_args else ""}{", ".join(need_args)}, **kwargs):
     path = {make_path}
     return self.get_path(path, **kwargs)
 setattr(API, 'get_{name}', API_method_get_{name})
@@ -224,22 +228,26 @@ setattr(API, 'get_{name}', API_method_get_{name})
     exec(code)
     
 
-def build_each_get_method(path, name, config):
+def build_each_get_method(path, name, config, part=None):
     name = name.rstrip('s')
     need_args =  [(v or dict()).get('alias', k).rstrip('s') for k,v in config.items()]
-    make_path = "'"+path+"/%s'" + (('%('+','.join(need_args)+',)') if need_args else '')
+    if part:
+        need_args.append(part)
+    make_path = "'"+path+"/%s"+("/%s" if part else "")+"'" + (('%('+','.join(need_args)+',)') if need_args else '')
     code = f'''
-def API_method_get_{name}(self{", " if need_args else ""}{", ".join(need_args)}, **vargs):
+def API_method_get_{name}{("_"+part) if part else ""}(self{", " if need_args else ""}{", ".join(need_args)}, **kwargs):
     path = {make_path}
     return self.get_path(path, **kwargs)
-setattr(API, 'get_{name}', API_method_get_{name})
+setattr(API, 'get_{name}{("_"+part) if part else ""}', API_method_get_{name}{("_"+part) if part else ""})
     '''
     exec(code)
     
-def build_create_method(path, name, root, config):
+def build_create_method(path, name, root, config, part=None):
     name = name.rstrip('s')
-    need_args =  [(v or dict()).get('alias', k).rstrip('s') for k,v in root.items()][:-1]
-    make_path = "'"+path+"'" + (('%('+','.join(need_args)+',)') if need_args else '')
+    need_args =  [(v or dict()).get('alias', k).rstrip('s') for k,v in root.items()]
+    if not part:
+        need_args = need_args[:-1]
+    make_path = "'"+path+("/%s" if part else "")+"'" + (('%('+','.join(need_args)+',)') if need_args else '')
     require_args = [k for k,v in (config or dict()).items() if v=="require"]
     make_paras = ['paras = dict()']
     for arg in require_args:
@@ -251,22 +259,55 @@ def build_create_method(path, name, root, config):
         make_paras.append(f'paras["{k}"] = ' + (f"({k} or {v[2:-1]})" if v[1]=='!' else f"{k}"))
     make_paras = '\n'.join(['    '+p for p in make_paras])
     code = f'''
-def API_method_create_{name}(self{", " if need_args else ""}{", ".join(need_args)}, **vargs):
+def API_method_create_{name}{("_"+part) if part else ""}(self{", " if need_args else ""}{", ".join(need_args)}, **kwargs):
     path = {make_path}
 {make_paras}
     return self.create_path(path, paras, **kwargs)
-setattr(API, 'create_{name}', API_method_create_{name})
+setattr(API, 'create_{name}{("_"+part) if part else ""}', API_method_create_{name}{("_"+part) if part else ""})
     '''
     exec(code)    
 
-def build_update_method(path, name, config):
-    pass #print('build update method', path+'/%s', 'update_'+name.rstrip('s'))
+def build_update_method(path, name, root, config, part=None):
+    name = name.rstrip('s')
+    need_args =  [(v or dict()).get('alias', k).rstrip('s') for k,v in root.items()]
+    if part:
+        need_args.append(part)
+    make_path = "'"+path+"/%s"+("/%s" if part else "")+"'" + (('%('+','.join(need_args)+',)') if need_args else '')
+    code = f'''
+def API_method_update_{name}{("_"+part) if part else ""}(self{", " if need_args else ""}{", ".join(need_args)}, **kwargs):
+    path = {make_path}
+    return self.update_path(path, [{', '.join(["'"+c+"'" for c in config])}], **kwargs)
+setattr(API, 'update_{name}{("_"+part) if part else ""}', API_method_update_{name}{("_"+part) if part else ""})
+    '''
+    exec(code)
+   
 
 def build_exists_method(path, name, config):
-    pass #print('build exists method', path+'/%s', 'exists_'+name.rstrip('s'))
-
-def build_delete_method(path, name, config):
-    pass #print('build delete method', path+'/%s', 'delete_'+name.rstrip('s'))
+    name = name.rstrip('s')
+    need_args =  [(v or dict()).get('alias', k).rstrip('s') for k,v in config.items()]
+    make_path = "'"+path+"/%s'" + (('%('+','.join(need_args)+',)') if need_args else '')
+    code = f'''
+def API_method_exists_{name}(self{", " if need_args else ""}{", ".join(need_args)}, **kwargs):
+    path = {make_path}
+    return self.exists_path(path, **kwargs)
+setattr(API, 'exists_{name}', API_method_exists_{name})
+    '''
+    exec(code)
+    
+def build_delete_method(path, name, config, part=None):
+    name = name.rstrip('s')
+    need_args =  [(v or dict()).get('alias', k).rstrip('s') for k,v in config.items()]
+    if part:
+        need_args.append(part)
+    make_path = "'"+path+"/%s"+("/%s" if part else "")+"'" + (('%('+','.join(need_args)+',)') if need_args else '')
+    code = f'''
+def API_method_delete_{name}{("_"+part) if part else ""}(self{", " if need_args else ""}{", ".join(need_args)}, **kwargs):
+    path = {make_path}
+    return self.delete_path(path, **kwargs)
+setattr(API, 'delete_{name}{("_"+part) if part else ""}', API_method_delete_{name}{("_"+part) if part else ""})
+    '''
+    exec(code)
+    
     
 def build_api_method(root, path, config):
     full_path = '/'+'/%s/'.join([k for k in root.keys()]+[path])
@@ -285,11 +326,22 @@ def build_api_method(root, path, config):
                 if ekey == 'get':
                     build_each_get_method(full_path, stem, eroot)
                 elif ekey == 'update':
-                    build_update_method(full_path, stem, eroot)
+                    build_update_method(full_path, stem, eroot, evalue)
                 elif ekey == 'exists':
                     build_exists_method(full_path, stem, eroot)
                 elif ekey == 'delete':
                     build_delete_method(full_path, stem, eroot)
+        elif key == 'parts':
+            for pkey, pvalue in value.items():
+                for ekey, evalue in pvalue.items():
+                    if ekey == 'get':
+                        build_each_get_method(full_path, stem, eroot, pkey)
+                    elif ekey == 'delete':
+                        build_delete_method(full_path, stem, eroot, pkey)
+                    elif ekey == 'update':
+                        build_update_method(full_path, stem, eroot, evalue, pkey)
+                    elif ekey == 'create':
+                        build_create_method(full_path, stem, eroot, evalue, pkey)
         elif key == 'contains':
             for ekey, evalue in value.items():
                 build_api_method(eroot, ekey, evalue)
