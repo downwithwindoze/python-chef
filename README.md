@@ -4,7 +4,7 @@ A python interface to the chef server api
 Designed specifically for chef version >= 12.4 using authentication protocol 1.3.  For older chef versions see https://github.com/coderanger/pychef.
 
 Wraps a [requests](https://docs.python-requests.org/en/master/) session with an "API" object, so expect standard requests session behaviour.
-Overriding the `request` method of the session deals with the authentication layer and then functions get, create, update, delete etc functions are added which ultimately call that method.
+Overriding the `request` method of the session deals with the authentication layer and then various get, create, update, delete etc functions are added which ultimately call that method.
 
 Feedback is welcome.
 
