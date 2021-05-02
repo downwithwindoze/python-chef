@@ -50,14 +50,13 @@ class UpdateInvalid(Exception):
         self.message = f"Updating {path} no valid parameter provided from {', '.join(items)}"
         
 class API(requests.Session):
-    def __init__(self, server, user, key, port=443, password=None, verify=True, cache=True):
+    def __init__(self, server, user, key, port=443, password=None, verify=True):
         super().__init__()
         self._key = serialization.load_pem_private_key(key.encode('utf-8'), password=password)
         self._user = user
         self._verify = verify
         self._server = server
         self._port = port
-        self._cache = cache
         self._headers = {
             'Accept': 'application/json',
             'Accept-Encoding': 'gzip;q=1.0,deflate;q=0.6,identity;q=0.3',
@@ -80,7 +79,6 @@ class API(requests.Session):
             'X-Ops-UserId': self._user,
             'X-Ops-Server-API-Version': '1'
         }
-        self._cached = dict()
 
     @property
     def server(self):
@@ -125,28 +123,28 @@ class API(requests.Session):
         return self.get_path(path, **kwargs)
     @property
     def license(self):
-        return self.get_license(cache=False, cached=False)
+        return self.get_license()
 
     def get_stats(self, **kwargs):
         path = '/_stats'
         return self.get_path(path, **kwargs)
     @property
     def stats(self):
-        return self.get_stats(cache=False, cached=False)
+        return self.get_stats()
 
     def get_status(self, **kwargs):
         path = '/_status'
         return self.get_path(path, **kwargs)
     @property
     def status(self):
-        return self.get_status(cache=False, cached=False)
+        return self.get_status()
 
     def get_cookbooks(self, **kwargs):
         path = '/universe'
         return self.get_path(path, **kwargs)
     @property
     def cookbooks(self):
-        return self.get_cookbooks(cache=False, cached=False)
+        return self.get_cookbooks()
 
     def list_users(self, **kwargs):
         path = '/users'
@@ -536,19 +534,13 @@ class API(requests.Session):
         path = '/organizations/%s/clients/%s/keys/%s'%(org,client,key,)
         return self.update_path(path, ['name', 'public_key', 'expiration_date'], **kwargs)
     
-    def get_path(self, path, cached=True, cache=None, **kwargs):
-        if cache is None:
-            cache = self._cache
-        if not cached and path in self._cached:
-            del self._cached[path]
+    def get_path(self, path, **kwargs):
         resp = self.get(path, **kwargs)
         data = None
         if resp.status_code != 200:
             raise GetFailed(path, resp.status_code, resp.text)
         else:
             data = resp.json()
-        if cache:
-            self._cached[path] = data
         return data
 
     def create_path(self, path, json, **kwargs):
@@ -560,7 +552,7 @@ class API(requests.Session):
     def update_path(self, path, items, **kwargs):
         params = dict()
         if not kwargs.get('replace', False):
-            params = self.get_path(path, cached=False)
+            params = self.get_path(path)
         if 'replace' in kwargs:
             del kwargs['replace']
         valid = False
@@ -574,16 +566,12 @@ class API(requests.Session):
         resp = self.put(path, json=params, **kwargs)
         if resp.status_code not in (200,201):
             raise UpdateFailed(params, path, resp.status_code, resp.text)
-        if path in self._cached:
-            del self._cached[path]
         return resp.json()
     
     def delete_path(self, path, **kwargs):
         resp = self.delete(path, **kwargs)
         if resp.status_code != 200:
             raise DeleteFailed(path, resp.status_code, resp.text)
-        if path in self._cached:
-            del self._cached[path]
         return resp.json()
 
     def head_path(self, path, **kwargs):

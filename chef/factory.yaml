@@ -3,12 +3,10 @@ license:
   get: null
 _stats:
   alias: stats
-  get:
-    cache: false
+  get: {}
 _status:
   alias: status
-  get:
-    cache: false
+  get: {}
 universe:
   alias: cookbooks
   get: null
