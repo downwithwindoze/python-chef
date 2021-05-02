@@ -16,7 +16,6 @@ docker pull cbuisson/chef-server
 docker run --name test-chef-server -d -p 4443:443 cbuisson/chef-server
 docker logs -f test-chef-server   # (wait for server to bootstrap then ^C)
 docker exec -it test-chef-server /bin/bash
-> chef-server-ctl org-create testorg TestOrg
 > chef-server-ctl add-user-key pivotal --key-name admin
 > exit
 ```
