@@ -50,12 +50,12 @@ class UpdateInvalid(Exception):
         self.message = f"Updating {path} no valid parameter provided from {', '.join(items)}"
         
 class API(requests.Session):
-    def __init__(self, server, user, key, port=443, password=None, verify=True):
+    def __init__(self, host, user, key, port=443, password=None, verify=True):
         super().__init__()
         self._key = serialization.load_pem_private_key(key.encode('utf-8'), password=password)
         self._user = user
         self._verify = verify
-        self._server = server
+        self._host = host
         self._port = port
         self._headers = {
             'Accept': 'application/json',
@@ -66,7 +66,7 @@ class API(requests.Session):
             'X-Ops-Timestamp': None,
             'X-Ops-Content-Hash': None,
             'X-Chef-Version': '14.0.0',
-            'Host': self._server,
+            'Host': self._host,
             'Path': None,
             'User-Agent': f"python-chef {init['version']}"
         }
@@ -81,8 +81,8 @@ class API(requests.Session):
         }
 
     @property
-    def server(self):
-        return self._server
+    def host(self):
+        return self._host
 
     @property
     def key(self):
@@ -96,16 +96,17 @@ class API(requests.Session):
     def port(self):
         return self._port
 
-    def get_search_indexes(self, org, **kwargs):
+    def list_searches(self, org, **kwargs):
         return list(self.get_path(f'/organizations/{org}/search', **kwargs).keys())
     
     # see https://docs.chef.io/workstation/knife_search/#query-syntax
     def search(self, org, index, start=0, rows=None, query='*', **kwargs):
-        if index not in self.search_indexes:
+        if index not in self.list_searches(org):
             raise GetInvalid('invalid search index')
         params = dict(start=start, q=query)
-        if rows is not None:
-            params['rows'] = rows
+        if rows is None:
+            rows = len(self.get_path(f'/organizations/{org}/{index}s')) - start
+        params['rows'] = rows
         return self.get_path(f'/organizations/{org}/search/{index}', params=params, **kwargs)['rows']
 
     def create_user(self, username, first_name, last_name, email, password, middle_name=None, display_name=None, public_key=None, **kwargs):
@@ -488,7 +489,6 @@ class API(requests.Session):
     def create_user_key(self, user, name, public_key=None, expiration_date='infinity', **kwargs):
         path = '/users/%s/keys'%(user,)
         paras = dict()
-        paras["user"] = user
         paras["name"] = name
         paras["expiration_date"] = expiration_date
         paras["create_key"] = (public_key is None)
@@ -580,7 +580,7 @@ class API(requests.Session):
     
     # note that url is used for path within the org in this implementation
     def request(self, method, url, data=None, json=None, headers=None, verify=None, **kwargs):
-        url = urljoin(f"https://{self._server}:{self._port}", url)
+        url = urljoin(f"https://{self._host}:{self._port}", url)
         urlobj = urlparse(url)
         now = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')
         body = (data or '') + (libjson.dumps(json) if json else '')

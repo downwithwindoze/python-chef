@@ -14,4 +14,9 @@ __version__ = '.'.join([str(v) for v in version_info])
 author_info = collections.namedtuple('auth_info', ['name', 'email'])(init['author'], init['email'])
 __author__ = f'{author_info.name} <{author_info.email}>'
 
-from .api import API, GetFailed
+from .api import API, OperationFailed, GetFailed, DeleteFailed, ChangeFailed, CreateFailed, UpdateFailed, GetInvalid, UpdateInvalid
+
+from .server import Server
+from .user import User
+from .client import Client
+
